@@ -41,11 +41,11 @@ const server = createServer(async (req, res) => {
     else if (method === "GET" && path === "/api/dashboard") data = dashboardService.summary();
     else if (method === "GET" && path === "/api/audit-logs") data = auditLogs;
     else data =
-      memberRoutes(method, path, url.searchParams) ??
-      projectRoutes(method, path, url.searchParams, user as never, body) ??
-      experimentRoutes(method, path, url.searchParams, user as never, body) ??
-      reagentUsageRoutes(method, path, url.searchParams, user as never, body) ??
-      reagentRoutes(method, path, url.searchParams, user as never, body);
+      await memberRoutes(method, path, url.searchParams) ??
+      (await projectRoutes(method, path, url.searchParams, user as never, body)) ??
+      (await experimentRoutes(method, path, url.searchParams, user as never, body)) ??
+      (await reagentUsageRoutes(method, path, url.searchParams, user as never, body)) ??
+      (await reagentRoutes(method, path, url.searchParams, user as never, body));
 
     if (data === undefined) throw new ApiError(404, "NOT_FOUND", "接口不存在");
     res.writeHead(method === "POST" ? 201 : 200, { "content-type": "application/json; charset=utf-8" });

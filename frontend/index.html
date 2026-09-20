@@ -114,18 +114,27 @@
           headers: { "content-type": "application/json", "x-demo-role": "PI", ...(options.headers || {}) }
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.message || "请求失败");
+        if (!response.ok) {
+          const error = new Error(payload.message || "请求失败");
+          error.code = payload.code;
+          error.details = payload.details;
+          throw error;
+        }
         return payload.data;
       };
       const badge = (value) => `<span class="badge ${value}">${value}</span>`;
       const currency = (value) => new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", maximumFractionDigits: 0 }).format(value);
-      let state = { view: "dashboard", dashboard: null, projects: [], experiments: [], reagents: [], usages: [], members: [] };
+      let state = { view: "dashboard", dashboard: null, projects: [], experiments: [], reagents: [], usages: [], members: [], closeFailures: {} };
 
       async function show(view) {
         state.view = view;
         document.querySelectorAll(".nav").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
         if (view === "dashboard") state.dashboard = await api("/dashboard");
-        if (view === "projects") { state.projects = await api("/projects"); state.members = await api("/members"); }
+        if (view === "projects") {
+          state.projects = await api("/projects");
+          state.members = await api("/members");
+          state.experiments = await api("/experiments");
+        }
         if (view === "experiments") { state.experiments = await api("/experiments"); state.projects = await api("/projects"); }
         if (view === "reagents") state.reagents = await api("/reagents");
         if (view === "usages") { state.usages = await api("/reagent-usages"); state.reagents = await api("/reagents"); state.experiments = await api("/experiments"); }
@@ -145,7 +154,27 @@
         }
         if (state.view === "projects") {
           app.innerHTML = `<h2>项目管理</h2><div class="toolbar"><button class="action" onclick="createProject()">新建项目</button></div>
-          ${table(["项目", "编号", "状态", "经费使用", "成员数"], state.projects.map((x) => [x.name, x.projectNo, badge(x.status), progress(x.usedBudget, x.totalBudget), state.members.filter((m) => m.projectId === x.id).length]))}`;
+          ${state.projects.map((x) => {
+            const blocking = state.experiments.filter((e) => e.projectId === x.id && ["Draft", "Submitted", "Rejected", "RevisionRequired"].includes(e.reviewStatus));
+            const failure = state.closeFailures[x.id];
+            const closeButton = x.status === "Completed"
+              ? `<span class="badge Approved">已结题 ${x.actualEndAt || ""}</span>`
+              : `<button class="action" onclick="closeProject('${x.id}')">提交结题</button>`;
+            const blockerPanel = failure ? `<div class="alert" style="margin:10px 0">
+              <div style="font-weight:700;margin-bottom:6px">结题被拒绝：${failure.message}</div>
+              ${failure.blockers.length ? `<table style="margin:0 0 8px"><thead><tr><th>编号</th><th>标题</th><th>状态</th></tr></thead><tbody>${failure.blockers.map((b) => `<tr><td>${b.id}</td><td>${b.title}</td><td>${badge(b.reviewStatus)}</td></tr>`).join("")}</tbody></table>` : ""}
+              <button class="action secondary" onclick="closeProject('${x.id}')">审核通过后再次结题</button>
+            </div>` : "";
+            return `<div class="card" style="margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong>${x.name}</strong> ${badge(x.status)}
+              </div>
+              <div style="color:var(--muted);font-size:13px;margin-bottom:6px">${x.projectNo} · 待通过实验记录 ${blocking.length} 条</div>
+              ${progress(x.usedBudget, x.totalBudget)}
+              <div style="margin-top:10px">${closeButton}</div>
+              ${blockerPanel}
+            </div>`;
+          }).join("")}`;
         }
         if (state.view === "experiments") {
           app.innerHTML = `<h2>实验记录</h2><div class="toolbar"><button class="action" onclick="createExperiment()">创建记录</button></div>
@@ -175,6 +204,18 @@
       const reagentName = (id) => state.reagents.find((x) => x.id === id)?.name || id;
       const experimentName = (id) => state.experiments.find((x) => x.id === id)?.title || id;
       async function createProject() { await api("/projects", { method: "POST", body: JSON.stringify({ name: "单细胞数据复核项目", projectNo: "RL-2026-BIO-099", direction: "Biology", totalBudget: 180000 }) }); state.projects = await api("/projects"); render(); }
+      async function closeProject(id) {
+        try {
+          const updated = await api(`/projects/${id}/close`, { method: "PATCH" });
+          state.projects = state.projects.map((x) => (x.id === id ? updated : x));
+          delete state.closeFailures[id];
+          state.experiments = await api("/experiments");
+        } catch (error) {
+          // 门禁拒绝（或与审核并发冲突）：后端逐条返回阻塞记录编号与状态
+          state.closeFailures[id] = { message: error.message, blockers: error.details?.blockers || [] };
+        }
+        render();
+      }
       async function createExperiment() { await api("/experiments", { method: "POST", body: JSON.stringify({ projectId: state.projects[0].id, title: "Western Blot 条件摸索", purpose: "优化抗体稀释比例", method: "WB" }) }); state.experiments = await api("/experiments"); render(); }
       async function submitExperiment(id) { await api(`/experiments/${id}/submit`, { method: "PATCH" }); state.experiments = await api("/experiments"); render(); }
       async function reviewExperiment(id) { await api(`/experiments/${id}/review`, { method: "PATCH", body: JSON.stringify({ status: "Approved", comment: "记录完整，允许归档" }) }); state.experiments = await api("/experiments"); render(); }

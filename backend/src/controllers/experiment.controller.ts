@@ -17,9 +17,10 @@ export const experimentController = {
     auditLogMiddleware(user, "SUBMIT_EXPERIMENT", "ExperimentRecord", record.id);
     return record;
   },
-  review(user: User, id: string, status: string, comment = "") {
+  async review(user: User, id: string, status: string, comment = "") {
     rbacMiddleware(user, ["Admin", "PI", "SubPI", "Researcher"]);
-    const record = experimentService.review(id, user.id, status, comment);
+    // 锁内原子完成状态校验与写入；失败时不写审计。
+    const record = await experimentService.review(user, id, status, comment);
     auditLogMiddleware(user, "REVIEW_EXPERIMENT", "ExperimentRecord", record.id);
     return record;
   }

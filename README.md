@@ -37,6 +37,7 @@ backend/src/
 
 - `GET /api/dashboard`
 - `GET|POST /api/projects`
+- `PATCH /api/projects/:id/close` — 结题门禁：全部实验记录 Approved 才写入实际结题日期与审计；存在 Draft/Submitted/Rejected/RevisionRequired 时原子拒绝并返回阻塞记录编号与状态；与实验审核并发时仅一方成功，失败方无状态/日期残值
 - `GET /api/members`
 - `GET|POST /api/experiments`
 - `PATCH /api/experiments/:id/submit`

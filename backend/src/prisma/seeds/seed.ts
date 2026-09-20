@@ -16,7 +16,10 @@ export const projects: ResearchProject[] = [
 
 export const experiments: ExperimentRecord[] = [
   { id: "ex-001", projectId: "pr-immune", title: "CD8+T 细胞浸润比例测定", purpose: "验证样本中免疫细胞分布", method: "流式细胞术", stepsJson: { type: "doc", content: [{ type: "paragraph", text: "样本消化、抗体孵育、上机采集。" }] }, conclusion: "实验组浸润比例高于对照组。", experimentDate: "2026-06-08", experimenterId: "u-researcher", reviewerId: "u-pi", reviewStatus: ReviewStatus.Approved, reviewComment: "数据完整", attachmentUrls: ["/files/flow-0608.xlsx"] },
-  { id: "ex-002", projectId: "pr-catalyst", title: "催化剂 A17 活性复测", purpose: "复核低温活性曲线", method: "固定床反应", stepsJson: { type: "doc", content: [{ type: "table", rows: 4 }] }, conclusion: "120 摄氏度活性异常，需要补测。", experimentDate: "2026-06-11", experimenterId: "u-student", reviewStatus: ReviewStatus.Submitted, attachmentUrls: [] }
+  { id: "ex-002", projectId: "pr-catalyst", title: "催化剂 A17 活性复测", purpose: "复核低温活性曲线", method: "固定床反应", stepsJson: { type: "doc", content: [{ type: "table", rows: 4 }] }, conclusion: "120 摄氏度活性异常，需要补测。", experimentDate: "2026-06-11", experimenterId: "u-student", reviewStatus: ReviewStatus.Submitted, attachmentUrls: [] },
+  { id: "ex-003", projectId: "pr-catalyst", title: "载体 B3 热稳定性初筛", purpose: "确认载体在高温工况下的失活速率", method: "热重分析", stepsJson: { type: "doc", content: [] }, conclusion: "", experimentDate: "2026-06-13", experimenterId: "u-student", reviewStatus: ReviewStatus.Draft, attachmentUrls: [] },
+  { id: "ex-004", projectId: "pr-catalyst", title: "助剂 C9 掺杂比例对比", purpose: "寻找最佳掺杂比例", method: "XRD 表征", stepsJson: { type: "doc", content: [] }, conclusion: "比例设置缺少对照组。", experimentDate: "2026-06-14", experimenterId: "u-researcher", reviewerId: "u-pi", reviewStatus: ReviewStatus.RevisionRequired, reviewComment: "请补充对照组", attachmentUrls: [] },
+  { id: "ex-005", projectId: "pr-catalyst", title: "中试装置密封性检查", purpose: "排除管路泄漏对活性数据的干扰", method: "氦质谱检漏", stepsJson: { type: "doc", content: [] }, conclusion: "法兰处存在微漏。", experimentDate: "2026-06-15", experimenterId: "u-researcher", reviewerId: "u-pi", reviewStatus: ReviewStatus.Rejected, reviewComment: "检修后重做", attachmentUrls: [] }
 ];
 
 export const reagents: Reagent[] = [

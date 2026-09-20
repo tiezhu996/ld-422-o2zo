@@ -1,4 +1,4 @@
-import type { ProjectStatus } from "./enums";
+import type { ProjectStatus, ReviewStatus } from "./enums";
 
 export type ResearchProject = {
   id: string;
@@ -12,4 +12,11 @@ export type ResearchProject = {
   status: ProjectStatus;
   totalBudget: number;
   usedBudget: number;
+};
+
+/** 结题被门禁拒绝时，后端逐条返回的阻塞实验记录。 */
+export type CloseBlocker = {
+  id: string;
+  title: string;
+  reviewStatus: ReviewStatus;
 };

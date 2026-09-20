@@ -15,5 +15,10 @@ export const projectController = {
     const project = projectService.create(body);
     auditLogMiddleware(user, "CREATE_PROJECT", "ResearchProject", project.id);
     return project;
+  },
+  /** 提交结题：门禁、实际结题日期与审计均由 service 在项目锁内原子完成。 */
+  close(user: User, id: string) {
+    rbacMiddleware(user, ["Admin", "PI", "SubPI"]);
+    return projectService.close(user, id);
   }
 };
