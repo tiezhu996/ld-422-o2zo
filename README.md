@@ -37,6 +37,7 @@ backend/src/
 
 - `GET /api/dashboard`
 - `GET|POST /api/projects`
+- `PATCH /api/projects/:id/complete`（结题门禁：存在未通过实验记录时返回 409 与阻塞清单）
 - `GET /api/members`
 - `GET|POST /api/experiments`
 - `PATCH /api/experiments/:id/submit`

@@ -61,3 +61,8 @@ export type ProjectMember = {
   joinedAt: string;
 };
 export type AuditLog = { id: string; actorId: string; action: string; entity: string; entityId: string; createdAt: string };
+export type CompletionBlocker = {
+  experimentId: string;
+  title: string;
+  reviewStatus: ReviewStatusValue;
+};

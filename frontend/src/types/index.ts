@@ -1,4 +1,4 @@
-export type { ResearchProject } from "./project";
+export type { ResearchProject, CompletionBlocker, ProjectDetail } from "./project";
 export type { ExperimentRecord } from "./experiment";
 export type { Reagent, ReagentUsage } from "./reagent";
 export type { ProjectMember } from "./member";

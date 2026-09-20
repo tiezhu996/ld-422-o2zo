@@ -15,5 +15,11 @@ export const projectController = {
     const project = projectService.create(body);
     auditLogMiddleware(user, "CREATE_PROJECT", "ResearchProject", project.id);
     return project;
+  },
+  async complete(user: User, id: string) {
+    rbacMiddleware(user, ["Admin", "PI", "SubPI"]);
+    const project = await projectService.complete(id);
+    auditLogMiddleware(user, "COMPLETE_PROJECT", "ResearchProject", project.id);
+    return project;
   }
 };

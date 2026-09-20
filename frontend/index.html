@@ -114,18 +114,23 @@
           headers: { "content-type": "application/json", "x-demo-role": "PI", ...(options.headers || {}) }
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.message || "请求失败");
+        if (!response.ok) {
+          const error = new Error(payload.message || "请求失败");
+          error.code = payload.code;
+          error.details = payload.details;
+          throw error;
+        }
         return payload.data;
       };
       const badge = (value) => `<span class="badge ${value}">${value}</span>`;
       const currency = (value) => new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", maximumFractionDigits: 0 }).format(value);
-      let state = { view: "dashboard", dashboard: null, projects: [], experiments: [], reagents: [], usages: [], members: [] };
+      let state = { view: "dashboard", dashboard: null, projects: [], experiments: [], reagents: [], usages: [], members: [], blockers: [], blockerError: "" };
 
       async function show(view) {
         state.view = view;
         document.querySelectorAll(".nav").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
         if (view === "dashboard") state.dashboard = await api("/dashboard");
-        if (view === "projects") { state.projects = await api("/projects"); state.members = await api("/members"); }
+        if (view === "projects") { state.projects = await api("/projects"); state.members = await api("/members"); state.blockers = []; state.blockerError = ""; }
         if (view === "experiments") { state.experiments = await api("/experiments"); state.projects = await api("/projects"); }
         if (view === "reagents") state.reagents = await api("/reagents");
         if (view === "usages") { state.usages = await api("/reagent-usages"); state.reagents = await api("/reagents"); state.experiments = await api("/experiments"); }
@@ -144,8 +149,12 @@
           ${table(["项目", "方向", "状态", "经费"], d.activeProjects.map((x) => [x.name, x.direction, badge(x.status), progress(x.usedBudget, x.totalBudget)]))}`;
         }
         if (state.view === "projects") {
+          const blockerHtml = state.blockers.length
+            ? `<div class="alert">结题被拒绝：${state.blockerError}（审核通过后可再次提交）${table(["记录编号", "实验标题", "审核状态"], state.blockers.map((b) => [b.experimentId, b.title, badge(b.reviewStatus)]))}</div>`
+            : state.blockerError ? `<div class="alert">${state.blockerError}</div>` : "";
           app.innerHTML = `<h2>项目管理</h2><div class="toolbar"><button class="action" onclick="createProject()">新建项目</button></div>
-          ${table(["项目", "编号", "状态", "经费使用", "成员数"], state.projects.map((x) => [x.name, x.projectNo, badge(x.status), progress(x.usedBudget, x.totalBudget), state.members.filter((m) => m.projectId === x.id).length]))}`;
+          ${blockerHtml}
+          ${table(["项目", "编号", "状态", "经费使用", "成员数", "实际结题日期", "操作"], state.projects.map((x) => [x.name, x.projectNo, badge(x.status), progress(x.usedBudget, x.totalBudget), state.members.filter((m) => m.projectId === x.id).length, x.actualEndAt || "-", ["Completed", "Archived"].includes(x.status) ? "—" : `<button class="action warning" onclick="completeProject('${x.id}')">提交结题</button>`]))}`;
         }
         if (state.view === "experiments") {
           app.innerHTML = `<h2>实验记录</h2><div class="toolbar"><button class="action" onclick="createExperiment()">创建记录</button></div>
@@ -175,6 +184,18 @@
       const reagentName = (id) => state.reagents.find((x) => x.id === id)?.name || id;
       const experimentName = (id) => state.experiments.find((x) => x.id === id)?.title || id;
       async function createProject() { await api("/projects", { method: "POST", body: JSON.stringify({ name: "单细胞数据复核项目", projectNo: "RL-2026-BIO-099", direction: "Biology", totalBudget: 180000 }) }); state.projects = await api("/projects"); render(); }
+      async function completeProject(id) {
+        try {
+          await api(`/projects/${id}/complete`, { method: "PATCH" });
+          state.blockers = [];
+          state.blockerError = "";
+        } catch (error) {
+          state.blockers = error.details || [];
+          state.blockerError = error.message;
+        }
+        state.projects = await api("/projects");
+        render();
+      }
       async function createExperiment() { await api("/experiments", { method: "POST", body: JSON.stringify({ projectId: state.projects[0].id, title: "Western Blot 条件摸索", purpose: "优化抗体稀释比例", method: "WB" }) }); state.experiments = await api("/experiments"); render(); }
       async function submitExperiment(id) { await api(`/experiments/${id}/submit`, { method: "PATCH" }); state.experiments = await api("/experiments"); render(); }
       async function reviewExperiment(id) { await api(`/experiments/${id}/review`, { method: "PATCH", body: JSON.stringify({ status: "Approved", comment: "记录完整，允许归档" }) }); state.experiments = await api("/experiments"); render(); }

@@ -42,8 +42,8 @@ const server = createServer(async (req, res) => {
     else if (method === "GET" && path === "/api/audit-logs") data = auditLogs;
     else data =
       memberRoutes(method, path, url.searchParams) ??
-      projectRoutes(method, path, url.searchParams, user as never, body) ??
-      experimentRoutes(method, path, url.searchParams, user as never, body) ??
+      (await projectRoutes(method, path, url.searchParams, user as never, body)) ??
+      (await experimentRoutes(method, path, url.searchParams, user as never, body)) ??
       reagentUsageRoutes(method, path, url.searchParams, user as never, body) ??
       reagentRoutes(method, path, url.searchParams, user as never, body);
 
